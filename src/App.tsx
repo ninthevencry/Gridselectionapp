@@ -20,7 +20,7 @@ export default function App() {
 
   // Generate random numbers for the grid (24 squares, 12 visible, 12 hidden)
   const [gridNumbers] = useState<GridSquare[][]>(() => {
-    // Generate array of numbers 1-100 and shuffle to ensure good distribution
+    // Generate array of numbers 1-100
     const allNumbers = Array.from({ length: 100 }, (_, i) => i + 1);
     
     // Fisher-Yates shuffle
@@ -29,15 +29,40 @@ export default function App() {
       [allNumbers[i], allNumbers[j]] = [allNumbers[j], allNumbers[i]];
     }
     
-    // Take first 28 unique numbers (24 for grid + 4 for target row)
-    const selectedNumbers = allNumbers.slice(0, 28);
+    // Ensure at least 5 numbers from 1-10 are in the first 24 positions
+    const smallNumbers = allNumbers.filter(n => n >= 1 && n <= 10);
+    const otherNumbers = allNumbers.filter(n => n > 10);
+    
+    // Take 5 small numbers for guaranteed inclusion
+    const guaranteedSmall = smallNumbers.slice(0, 5);
+    
+    // Combine with other numbers for remaining 19 slots (24 - 5)
+    const remaining = [...smallNumbers.slice(5), ...otherNumbers];
+    
+    // Shuffle remaining numbers
+    for (let i = remaining.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [remaining[i], remaining[j]] = [remaining[j], remaining[i]];
+    }
+    
+    // First 24: 5 guaranteed small + 19 from remaining
+    const gridNumbers = [...guaranteedSmall, ...remaining.slice(0, 19)];
+    
+    // Shuffle grid numbers to distribute small numbers randomly
+    for (let i = gridNumbers.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [gridNumbers[i], gridNumbers[j]] = [gridNumbers[j], gridNumbers[i]];
+    }
+    
+    // Next 4 for target row
+    const targetNumbers = remaining.slice(19, 23);
     
     const numbers: GridSquare[] = [];
     
     // Use first 24 numbers for the main grid
     for (let i = 0; i < 24; i++) {
       numbers.push({
-        number: selectedNumbers[i],
+        number: gridNumbers[i],
         isVisible: false
       });
     }
@@ -60,9 +85,9 @@ export default function App() {
       grid[row] = [];
       for (let col = 0; col < 4; col++) {
         if (row === 5) {
-          // Target row uses numbers 24-27
+          // Target row uses the 4 target numbers
           grid[row][col] = {
-            number: selectedNumbers[24 + col],
+            number: targetNumbers[col],
             isVisible: true
           };
         } else {
