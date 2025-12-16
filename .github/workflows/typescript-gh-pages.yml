@@ -24,7 +24,7 @@ jobs:
       - name: Deploy app to GitHub Pages
         uses: lr0pb/deploy-pages@v1
       - name: Upload artifact
-        uses: actions/upload-pages-artifact@v3
+        uses: actions/upload-pages-artifact@v4
         id: deployment
         with:
           node-version: 18.x
