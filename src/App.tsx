@@ -14,90 +14,15 @@ interface GridSquare {
 export default function App() {
   const [selections, setSelections] = useState<Selection[]>([]);
   const [matchedTargets, setMatchedTargets] = useState<number[]>([]);
+  const [isGameWon, setIsGameWon] = useState(false);
+  const [startTime, setStartTime] = useState<number>(Date.now());
+  const [completionTime, setCompletionTime] = useState<number>(0);
   const maxSelections = 5;
 
   const operators = ['+', '−', '×', '÷'];
 
   // Generate random numbers for the grid (24 squares, 12 visible, 12 hidden)
-  const [gridNumbers] = useState<GridSquare[][]>(() => {
-    // Generate array of numbers 1-100
-    const allNumbers = Array.from({ length: 100 }, (_, i) => i + 1);
-    
-    // Fisher-Yates shuffle
-    for (let i = allNumbers.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [allNumbers[i], allNumbers[j]] = [allNumbers[j], allNumbers[i]];
-    }
-    
-    // Ensure at least 5 numbers from 1-10 are in the first 24 positions
-    const smallNumbers = allNumbers.filter(n => n >= 1 && n <= 10);
-    const otherNumbers = allNumbers.filter(n => n > 10);
-    
-    // Take 5 small numbers for guaranteed inclusion
-    const guaranteedSmall = smallNumbers.slice(0, 5);
-    
-    // Combine with other numbers for remaining 19 slots (24 - 5)
-    const remaining = [...smallNumbers.slice(5), ...otherNumbers];
-    
-    // Shuffle remaining numbers
-    for (let i = remaining.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [remaining[i], remaining[j]] = [remaining[j], remaining[i]];
-    }
-    
-    // First 24: 5 guaranteed small + 19 from remaining
-    const gridNumbers = [...guaranteedSmall, ...remaining.slice(0, 19)];
-    
-    // Shuffle grid numbers to distribute small numbers randomly
-    for (let i = gridNumbers.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [gridNumbers[i], gridNumbers[j]] = [gridNumbers[j], gridNumbers[i]];
-    }
-    
-    // Next 4 for target row
-    const targetNumbers = remaining.slice(19, 23);
-    
-    const numbers: GridSquare[] = [];
-    
-    // Use first 24 numbers for the main grid
-    for (let i = 0; i < 24; i++) {
-      numbers.push({
-        number: gridNumbers[i],
-        isVisible: false
-      });
-    }
-    
-    // Randomly select 12 to be visible
-    const indices = Array.from({ length: 24 }, (_, i) => i);
-    for (let i = indices.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [indices[i], indices[j]] = [indices[j], indices[i]];
-    }
-    
-    // Make first 12 shuffled indices visible
-    for (let i = 0; i < 12; i++) {
-      numbers[indices[i]].isVisible = true;
-    }
-    
-    // Convert to 2D array (6 rows × 4 cols)
-    const grid: GridSquare[][] = [];
-    for (let row = 0; row < 6; row++) {
-      grid[row] = [];
-      for (let col = 0; col < 4; col++) {
-        if (row === 5) {
-          // Target row uses the 4 target numbers
-          grid[row][col] = {
-            number: targetNumbers[col],
-            isVisible: true
-          };
-        } else {
-          grid[row][col] = numbers[row * 4 + col];
-        }
-      }
-    }
-    
-    return grid;
-  });
+  const [gridNumbers, setGridNumbers] = useState<GridSquare[][]>(() => generateGrid());
 
   const isSelected = (row: number, col: number): boolean => {
     return selections.some(s => s.row === row && s.col === col);
@@ -177,9 +102,8 @@ export default function App() {
         
         // Check if puzzle is complete
         if (matchedTargets.length + 1 === 4) {
-          setTimeout(() => {
-            alert('🎉 Puzzle Complete! All targets matched!');
-          }, 500);
+          setCompletionTime(Date.now() - startTime);
+          setIsGameWon(true);
         }
       }
 
@@ -191,6 +115,26 @@ export default function App() {
   const handleReset = () => {
     setSelections([]);
     // Don't reset matchedTargets - keep gold squares highlighted
+  };
+
+  const handlePlayAgain = () => {
+    setSelections([]);
+    setMatchedTargets([]);
+    setGridNumbers(generateGrid());
+    setStartTime(Date.now());
+    setCompletionTime(0);
+    setIsGameWon(false);
+  };
+
+  const formatTime = (ms: number): string => {
+    const totalSeconds = Math.floor(ms / 1000);
+    const minutes = Math.floor(totalSeconds / 60);
+    const seconds = totalSeconds % 60;
+    
+    if (minutes > 0) {
+      return `${minutes}m ${seconds}s`;
+    }
+    return `${seconds}s`;
   };
 
   // Calculate running result based on current selections
@@ -351,46 +295,151 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center p-8">
-      <div className="max-w-2xl w-full">
-        <h1 className="text-center mb-8">Grid Selection Game</h1>
-        <p className="text-center text-gray-600 mb-6">
-          Select 5 squares to activate the GO button
-        </p>
-
-        {/* Main Grid */}
-        <div className="bg-white p-6 rounded-lg shadow-lg mb-6">
-          <div className="grid grid-cols-5 gap-2 mb-4 max-w-md mx-auto">
-            {Array.from({ length: 6 }).map((_, row) => 
-              Array.from({ length: 5 }).map((_, col) => renderSquare(row, col))
-            )}
+      {isGameWon ? (
+        // Win Screen
+        <div className="max-w-2xl w-full">
+          <div className="bg-white p-12 rounded-lg shadow-lg text-center">
+            <h1 className="text-5xl mb-8 text-green-600">You Are A Winner!</h1>
+            <p className="text-3xl text-gray-700 mb-8">
+              Completion Time: {formatTime(completionTime)}
+            </p>
+            <button
+              onClick={handlePlayAgain}
+              className="px-8 py-4 bg-blue-500 text-white rounded-lg cursor-pointer hover:bg-blue-600 transition-colors"
+            >
+              PLAY AGAIN
+            </button>
           </div>
         </div>
+      ) : (
+        // Game Screen
+        <div className="max-w-2xl w-full">
+          <h1 className="text-center mb-8">Grid Selection Game</h1>
+          <p className="text-center text-gray-600 mb-6">
+            Select 5 squares to activate the GO button
+          </p>
 
-        {/* 7th Row - Selection Display */}
-        {selections.length > 0 && (
-          <div className="bg-white p-6 rounded-lg shadow-lg">
-            <h2 className="text-center mb-4 text-gray-700">Your Selections</h2>
-            <div className="grid grid-cols-5 gap-2 max-w-md mx-auto">
-              {selections.map((selection, index) => (
-                <div
-                  key={index}
-                  className="aspect-square border-2 border-blue-500 bg-blue-100 flex items-center justify-center text-2xl"
-                >
-                  {selection.value}
-                </div>
-              ))}
-              {/* Empty placeholders for remaining selections */}
-              {Array.from({ length: maxSelections - selections.length }).map((_, index) => (
-                <div
-                  key={`empty-${index}`}
-                  className="aspect-square border-2 border-gray-300 border-dashed bg-gray-50"
-                />
-              ))}
+          {/* Main Grid */}
+          <div className="bg-white p-6 rounded-lg shadow-lg mb-6">
+            <div className="grid grid-cols-5 gap-2 mb-4 max-w-md mx-auto">
+              {Array.from({ length: 6 }).map((_, row) => 
+                Array.from({ length: 5 }).map((_, col) => renderSquare(row, col))
+              )}
             </div>
-            <p className="text-center mt-4 text-gray-500">{calculateRunningResult()}</p>
           </div>
-        )}
-      </div>
+
+          {/* 7th Row - Selection Display */}
+          {selections.length > 0 && (
+            <div className="bg-white p-6 rounded-lg shadow-lg">
+              <h2 className="text-center mb-4 text-gray-700">Your Selections</h2>
+              <div className="grid grid-cols-5 gap-2 max-w-md mx-auto">
+                {selections.map((selection, index) => (
+                  <div
+                    key={index}
+                    className="aspect-square border-2 border-blue-500 bg-blue-100 flex items-center justify-center text-2xl"
+                  >
+                    {selection.value}
+                  </div>
+                ))}
+                {/* Empty placeholders for remaining selections */}
+                {Array.from({ length: maxSelections - selections.length }).map((_, index) => (
+                  <div
+                    key={`empty-${index}`}
+                    className="aspect-square border-2 border-gray-300 border-dashed bg-gray-50"
+                  />
+                ))}
+              </div>
+              <p className="text-center mt-4 text-gray-500">{calculateRunningResult()}</p>
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
+}
+
+// Helper function to generate the grid
+function generateGrid(): GridSquare[][] {
+  // Generate array of numbers 1-100
+  const allNumbers = Array.from({ length: 100 }, (_, i) => i + 1);
+  
+  // Fisher-Yates shuffle
+  for (let i = allNumbers.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [allNumbers[i], allNumbers[j]] = [allNumbers[j], allNumbers[i]];
+  }
+  
+  // Ensure at least 5 numbers from 1-10 are in the first 24 positions
+  const smallNumbers = allNumbers.filter(n => n >= 1 && n <= 10);
+  const otherNumbers = allNumbers.filter(n => n > 10);
+  
+  // Take 5 small numbers for guaranteed inclusion
+  const guaranteedSmall = smallNumbers.slice(0, 5);
+  
+  // Combine with other numbers for remaining 19 slots (24 - 5)
+  const remaining = [...smallNumbers.slice(5), ...otherNumbers];
+  
+  // Shuffle remaining numbers
+  for (let i = remaining.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [remaining[i], remaining[j]] = [remaining[j], remaining[i]];
+  }
+  
+  // First 24: 5 guaranteed small + 19 from remaining
+  const gridNumbers = [...guaranteedSmall, ...remaining.slice(0, 19)];
+  
+  // Shuffle grid numbers to distribute small numbers randomly
+  for (let i = gridNumbers.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [gridNumbers[i], gridNumbers[j]] = [gridNumbers[j], gridNumbers[i]];
+  }
+  
+  // Generate 4 target numbers with specific ranges
+  const targetNumbers = [
+    Math.floor(Math.random() * 100) + 1,           // First: 1-100
+    Math.floor(Math.random() * 151) + 100,         // Second: 100-250
+    Math.floor(Math.random() * 151) + 250,         // Third: 250-400
+    Math.floor(Math.random() * 601) + 400          // Fourth: 400-1000
+  ];
+  
+  const numbers: GridSquare[] = [];
+  
+  // Use first 24 numbers for the main grid
+  for (let i = 0; i < 24; i++) {
+    numbers.push({
+      number: gridNumbers[i],
+      isVisible: false
+    });
+  }
+  
+  // Randomly select 12 to be visible
+  const indices = Array.from({ length: 24 }, (_, i) => i);
+  for (let i = indices.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [indices[i], indices[j]] = [indices[j], indices[i]];
+  }
+  
+  // Make first 12 shuffled indices visible
+  for (let i = 0; i < 12; i++) {
+    numbers[indices[i]].isVisible = true;
+  }
+  
+  // Convert to 2D array (6 rows × 4 cols)
+  const grid: GridSquare[][] = [];
+  for (let row = 0; row < 6; row++) {
+    grid[row] = [];
+    for (let col = 0; col < 4; col++) {
+      if (row === 5) {
+        // Target row uses the 4 target numbers
+        grid[row][col] = {
+          number: targetNumbers[col],
+          isVisible: true
+        };
+      } else {
+        grid[row][col] = numbers[row * 4 + col];
+      }
+    }
+  }
+  
+  return grid;
 }
