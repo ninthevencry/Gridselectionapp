@@ -44,9 +44,9 @@ jobs:
         uses: actions/upload-pages-artifact@v3
         with:
           name: production-files
-          path: ./dist
+          path: ./dist/
         continue-on-error: true
 
       - name: Deploy to GitHub Pages
         id: deployment
-        uses: actions/deploy-pages@v4
+        uses: actions/deploy-pages@v3
