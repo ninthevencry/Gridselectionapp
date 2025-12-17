@@ -58,37 +58,66 @@ export default function App() {
       const op2 = selections[3].value;
       const num3 = parseInt(selections[4].value);
 
-      // Calculate first operation
+      // Apply operator precedence: × and ÷ before + and −
       let result = 0;
-      switch (op1) {
-        case '+':
-          result = num1 + num2;
-          break;
-        case '−':
-          result = num1 - num2;
-          break;
-        case '×':
-          result = num1 * num2;
-          break;
-        case '÷':
-          result = Math.floor(num1 / num2);
-          break;
-      }
+      const op1IsHighPrecedence = op1 === '×' || op1 === '÷';
+      const op2IsHighPrecedence = op2 === '×' || op2 === '÷';
 
-      // Calculate second operation
-      switch (op2) {
-        case '+':
-          result = result + num3;
-          break;
-        case '−':
-          result = result - num3;
-          break;
-        case '×':
-          result = result * num3;
-          break;
-        case '÷':
-          result = Math.floor(result / num3);
-          break;
+      if (!op1IsHighPrecedence && op2IsHighPrecedence) {
+        // op2 has higher precedence, calculate num2 op2 num3 first
+        let rightResult = 0;
+        switch (op2) {
+          case '×':
+            rightResult = num2 * num3;
+            break;
+          case '÷':
+            rightResult = Math.floor(num2 / num3);
+            break;
+        }
+        
+        // Then apply op1
+        switch (op1) {
+          case '+':
+            result = num1 + rightResult;
+            break;
+          case '−':
+            result = num1 - rightResult;
+            break;
+        }
+      } else {
+        // Same precedence or op1 has higher precedence, evaluate left to right
+        // Calculate first operation
+        let leftResult = 0;
+        switch (op1) {
+          case '+':
+            leftResult = num1 + num2;
+            break;
+          case '−':
+            leftResult = num1 - num2;
+            break;
+          case '×':
+            leftResult = num1 * num2;
+            break;
+          case '÷':
+            leftResult = Math.floor(num1 / num2);
+            break;
+        }
+
+        // Calculate second operation
+        switch (op2) {
+          case '+':
+            result = leftResult + num3;
+            break;
+          case '−':
+            result = leftResult - num3;
+            break;
+          case '×':
+            result = leftResult * num3;
+            break;
+          case '÷':
+            result = Math.floor(leftResult / num3);
+            break;
+        }
       }
 
       // Check if result matches any target
@@ -143,47 +172,81 @@ export default function App() {
     if (selections.length === 1) return `= ${selections[0].value}`;
     if (selections.length === 2) return `= ${selections[0].value} ${selections[1].value}`;
     
-    // After 3rd selection, calculate first operation
+    // After 3rd selection, we need to check operator precedence
     const num1 = parseInt(selections[0].value);
     const op1 = selections[1].value;
     const num2 = parseInt(selections[2].value);
     
-    let result = 0;
-    switch (op1) {
-      case '+':
-        result = num1 + num2;
-        break;
-      case '−':
-        result = num1 - num2;
-        break;
-      case '×':
-        result = num1 * num2;
-        break;
-      case '÷':
-        result = Math.floor(num1 / num2);
-        break;
+    if (selections.length === 3) {
+      // Can't determine precedence yet, just show the expression
+      return `= ${selections[0].value} ${selections[1].value} ${selections[2].value}`;
     }
     
-    if (selections.length === 3) return `= ${result}`;
-    if (selections.length === 4) return `= ${result} ${selections[3].value}`;
+    if (selections.length === 4) {
+      return `= ${selections[0].value} ${selections[1].value} ${selections[2].value} ${selections[3].value}`;
+    }
     
-    // After 5th selection, calculate final result
+    // After 5th selection, calculate final result with operator precedence
     const op2 = selections[3].value;
     const num3 = parseInt(selections[4].value);
     
-    switch (op2) {
-      case '+':
-        result = result + num3;
-        break;
-      case '−':
-        result = result - num3;
-        break;
-      case '×':
-        result = result * num3;
-        break;
-      case '÷':
-        result = Math.floor(result / num3);
-        break;
+    let result = 0;
+    const op1IsHighPrecedence = op1 === '×' || op1 === '÷';
+    const op2IsHighPrecedence = op2 === '×' || op2 === '÷';
+
+    if (!op1IsHighPrecedence && op2IsHighPrecedence) {
+      // op2 has higher precedence, calculate num2 op2 num3 first
+      let rightResult = 0;
+      switch (op2) {
+        case '×':
+          rightResult = num2 * num3;
+          break;
+        case '÷':
+          rightResult = Math.floor(num2 / num3);
+          break;
+      }
+      
+      // Then apply op1
+      switch (op1) {
+        case '+':
+          result = num1 + rightResult;
+          break;
+        case '−':
+          result = num1 - rightResult;
+          break;
+      }
+    } else {
+      // Same precedence or op1 has higher precedence, evaluate left to right
+      let leftResult = 0;
+      switch (op1) {
+        case '+':
+          leftResult = num1 + num2;
+          break;
+        case '−':
+          leftResult = num1 - num2;
+          break;
+        case '×':
+          leftResult = num1 * num2;
+          break;
+        case '÷':
+          leftResult = Math.floor(num1 / num2);
+          break;
+      }
+
+      switch (op2) {
+        case '+':
+          result = leftResult + num3;
+          break;
+        case '−':
+          result = leftResult - num3;
+          break;
+        case '×':
+          result = leftResult * num3;
+          break;
+        case '÷':
+          result = Math.floor(leftResult / num3);
+          break;
+      }
     }
     
     return `= ${result}`;
