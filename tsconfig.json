@@ -3,10 +3,8 @@
     /* Language and Environment */
     "target": "ESNext",
     "lib": ["DOM", "DOM.Iterable", "ESNext","es6", "es2017"],
-    "jsx": "react",
-    "jsxFactory": "React.createElement",
-    "jsxFragmentFactory": "React.Fragment",
-    "types": ["react", "JSX.IntrinsicElements"],
+    "jsx": "react-jsx",
+    "types": ["react"],
 
     /* Module Resolution */
     "module": "ESNext",
